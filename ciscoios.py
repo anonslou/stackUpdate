@@ -40,47 +40,6 @@ class CiscoIOS:
         return ret
 
     '''
-    Switch Ports Model              SW Version            SW Image                 
-    ------ ----- -----              ----------            ----------               
-    *    1 52    WS-C2960S-48FPD-L  12.2(55)SE8           C2960S-UNIVERSALK9-M     
-         2 52    WS-C2960S-48FPD-L  12.2(55)SE8           C2960S-UNIVERSALK9-M     
-         3 52    WS-C2960S-48FPD-L  12.2(55)SE8           C2960S-UNIVERSALK9-M     
-         4 52    WS-C2960S-48FPD-L  12.2(55)SE8           C2960S-UNIVERSALK9-M     
-    
-    
-    Switch 02
-    ---------
-    Switch Uptime                   : 1 year, 43 weeks, 2 days, 1 hour, 44 minutes 
-    Base ethernet MAC Address       : 1C:E8:5D:68:7B:00
-    '''
-
-    def get_switches(self):
-        p = re.compile(r"""
-                        (\s|\*)*
-                        (?P<switch>\d)
-                        \s+
-                        (?P<ports>\d+)
-                        \s+
-                        (?P<model>\S+)
-                        \s+
-                        (?P<version>\S+)
-                        \s+
-                        (?P<image>\S+)
-                        """, re.VERBOSE)
-        ret = self.ssh.send_command('show version | begin Switch.*Ports.*Model.*SW Version.*SW Image')
-        switches = []
-        for line in ret.splitlines()[2:10]:
-            switch = {}
-            if p.search(line):
-                switch['switch'] = p.search(line).group('switch')
-                switch['ports'] = p.search(line).group('ports')
-                switch['model'] = p.search(line).group('model')
-                switch['version'] = p.search(line).group('version')
-                switch['image'] = p.search(line).group('image')
-                switches.append(switch)
-        return switches
-
-    '''
     #show switch
     Switch/Stack Mac Address : e089.9d50.7000
                                                H/W   Current
@@ -91,7 +50,7 @@ class CiscoIOS:
      3       Member 1ce8.5d68.3980     13     1       Ready               
      4       Member 1ce8.5d8a.cc80     12     1       Ready               
     '''
-    def get_switches2(self):
+    def get_switches(self):
         p = re.compile(r"""              
                         (\s|\*)
                         (?P<switch>\d)
@@ -139,11 +98,11 @@ class CiscoIOS:
     '''
     def flash_size(self, flash='flash:'):
         ret = self.ssh.send_command('show {0} | i bytes total'.format(flash))
-        return ret[:ret.find(' ')]
+        return int(ret[:ret.find(' ')])
 
     def flash_free(self, flash='flash:'):
         ret = self.ssh.send_command('show {0} | i bytes total'.format(flash))
-        return ret[ret.find('(')+1:ret.rfind(' bytes free')]
+        return int(ret[ret.find('(')+1:ret.rfind(' bytes free')])
 
     def write(self):
         return self.ssh.send_command('write memory')

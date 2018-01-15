@@ -37,3 +37,4 @@ class ParseConf:
 
     def set_pass(self, password):
         self.password = password
+

@@ -33,11 +33,16 @@ def load_ios(host):
     if not free_check():
         return
 
+    # copy ios image on master or single switch:
     ret = cisco.load_file(file=ios_image, dst_file='flash:/{0}'.format(ios_image))
     switches = cisco.get_switches()
     if len(switches) > 1:
-        for switch in switches[1:]:
+        # exclude master form list:
+        switches = sorted(switches, key=lambda sw: sw['role'], reverse=True)
+        switches.pop()
+        for switch in switches:
             if free_check('flash{0}'.format(switch['switch'])):
+                print(switch['switch'])
                 ret = cisco.f2f_copy(src='flash:{0}'.format(ios_image),
                                      dst='flash{1}:{0}'.format(ios_image, switch['switch']))
             else:
@@ -47,4 +52,4 @@ def load_ios(host):
 
 conf = parseconf.ParseConf()
 conf.set_pass(getpass.getpass())
-load_ios(conf.get_hosts_by_name('acc-sw-6.1'))
+load_ios(conf.get_hosts_by_name('acc-sw-5.2'))
