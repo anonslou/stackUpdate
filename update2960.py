@@ -5,10 +5,8 @@ import parseconf
 import getpass
 import os
 
-ios_image = 'c2960s-universalk9-mz.150-2.SE11.bin'
 
-
-def load_ios(host):
+def load_ios(host, ios_image):
     hostname = host['hostname']
     try:
         cisco = ciscoios.CiscoIOS(host)
@@ -28,28 +26,23 @@ def load_ios(host):
             return False
         return True
 
-    # TODO check file exist
+    if cisco.file_exist(file=ios_image):
+        return
 
     if not free_check():
         return
 
-    # copy ios image on master or single switch:
-    ret = cisco.load_file(file=ios_image, dst_file='flash:/{0}'.format(ios_image))
-    switches = cisco.get_switches()
-    if len(switches) > 1:
-        # exclude master form list:
-        switches = sorted(switches, key=lambda sw: sw['role'], reverse=True)
-        switches.pop()
-        for switch in switches:
-            if free_check('flash{0}'.format(switch['switch'])):
-                print(switch['switch'])
-                ret = cisco.f2f_copy(src='flash:{0}'.format(ios_image),
-                                     dst='flash{1}:{0}'.format(ios_image, switch['switch']))
-            else:
-                continue
+    ret = cisco.load_file(file=ios_image, dst_file='flash:{0}'.format(ios_image))
+    for switch in cisco.get_switches():
+        if switch['role'] is "Member":
+            sw_num = switch['switch']
+            if free_check('flash{0}:'.format(sw_num)) and \
+                    not cisco.file_exist(file=ios_image, flash='flash{}:'.format(sw_num)):
+                ret += cisco.f2f_copy(src='flash:{0}'.format(ios_image),
+                                      dst='flash{0}:{1}'.format(sw_num, ios_image))
     return ret
 
 
 conf = parseconf.ParseConf()
 conf.set_pass(getpass.getpass())
-load_ios(conf.get_hosts_by_name('acc-sw-5.2'))
+load_ios(conf.get_host_by_name('acc-sw-5.2'), ios_image='c2960s-universalk9-mz.150-2.SE11.bin')

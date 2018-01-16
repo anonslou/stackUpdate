@@ -16,7 +16,7 @@ class ParseConf:
         self.device_type = node['device_type']
         self.secret = node['secret']  # enable password
 
-    def get_hosts_by_name(self, hostname):
+    def get_host_by_name(self, hostname):
         netmikobj = {}
         node = self.nodes['devices'][hostname]
         netmikobj['username'] = self.username
@@ -33,8 +33,7 @@ class ParseConf:
 
     def get_all_hosts(self):
         for hostname in self.nodes['devices']:
-            yield self.get_hosts_by_name(hostname)
+            yield self.get_host_by_name(hostname)
 
     def set_pass(self, password):
         self.password = password
-

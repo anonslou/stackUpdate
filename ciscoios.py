@@ -67,7 +67,6 @@ class CiscoIOS:
                         \s+
                         """, re.VERBOSE)
         ret = self.ssh.send_command('show switch')
-        switches = []
         for line in ret.splitlines()[3:]:
             switch = {}
             if p.search(line):
@@ -77,8 +76,7 @@ class CiscoIOS:
                 switch['prior'] = p.search(line).group('prior')
                 switch['version'] = p.search(line).group('version')
                 switch['state'] = p.search(line).group('state')
-                switches.append(switch)
-        return switches
+                yield switch
 
     '''
     Flash to flash copy function. Don't use '/' in src, dst path after colon symbol:
@@ -104,6 +102,10 @@ class CiscoIOS:
         ret = self.ssh.send_command('show {0} | i bytes total'.format(flash))
         return int(ret[ret.find('(')+1:ret.rfind(' bytes free')])
 
+    def file_exist(self, file, flash='flash:'):
+        if self.ssh.send_command('show {0} | i {1}'.format(flash, file)):
+            return True
+        return False
+
     def write(self):
         return self.ssh.send_command('write memory')
-
