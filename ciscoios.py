@@ -66,7 +66,7 @@ class CiscoIOS:
                         (?P<state>Ready|.*?)
                         \s+
                         """, re.VERBOSE)
-        ret = self.ssh.send_command('show switch')
+        ret = self.ssh.send_command('show switch', delay_factor=5)
         for line in ret.splitlines()[3:]:
             switch = {}
             if p.search(line):

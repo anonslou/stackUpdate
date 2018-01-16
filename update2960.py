@@ -26,15 +26,12 @@ def load_ios(host, ios_image):
             return False
         return True
 
-    if cisco.file_exist(file=ios_image):
-        return
+    ret = ''
+    if free_check() and not cisco.file_exist(file=ios_image):
+        ret += cisco.load_file(file=ios_image, dst_file='flash:{0}'.format(ios_image))
 
-    if not free_check():
-        return
-
-    ret = cisco.load_file(file=ios_image, dst_file='flash:{0}'.format(ios_image))
     for switch in cisco.get_switches():
-        if switch['role'] is "Member":
+        if switch['role'] == "Member":
             sw_num = switch['switch']
             if free_check('flash{0}:'.format(sw_num)) and \
                     not cisco.file_exist(file=ios_image, flash='flash{0}:'.format(sw_num)):
@@ -43,8 +40,10 @@ def load_ios(host, ios_image):
     return ret
 
 
-conf = parseconf.ParseConf()
-conf.set_pass(getpass.getpass())
-host = conf.get_host_by_name('acc-sw-5.2')
-retv = load_ios(host=host, ios_image='c2960s-universalk9-mz.150-2.SE11.bin')
-print(retv)
+if __name__ == '__main__':
+    conf = parseconf.ParseConf()
+    conf.set_pass(getpass.getpass())
+    swit = conf.get_host_by_name('acc-sw-5.2')
+    retv = load_ios(host=swit, ios_image='c2960s-universalk9-mz.150-2.SE11.bin')
+    if retv:
+        print(retv)
