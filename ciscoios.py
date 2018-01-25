@@ -33,11 +33,10 @@ class CiscoIOS:
         if not scp_status:
             self.enable_scp()
         scp = SCPConn(self.ssh)
-        ret = scp.scp_transfer_file(file, dst_file)
+        scp.scp_transfer_file(file, dst_file)
         scp.close()
         if not scp_status:
             self.disable_scp()
-        return ret
 
     '''
     #show switch
@@ -106,6 +105,17 @@ class CiscoIOS:
         if self.ssh.send_command('show {0} | i {1}'.format(flash, file)):
             return True
         return False
+
+    def set_image(self, image):
+        return self.ssh.send_config_set(['boot system switch all flash:/{0}'.format(image)])
+
+    def reload(self, save=False):
+        if save:
+            self.write()
+        ret = self.ssh.send_command_timing('reload')
+        if 'Proceed with reload? [confirm]' in ret:
+            ret += self.ssh.send_command_timing('')
+        return ret
 
     def write(self):
         return self.ssh.send_command('write memory')

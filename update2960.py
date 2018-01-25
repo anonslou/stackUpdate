@@ -4,9 +4,11 @@ import ciscoios
 import parseconf
 import getpass
 import os
+from multiprocessing import Pool
+from functools import partial
 
 
-def load_ios(host, ios_image):
+def load_ios(host, ios_image, setios=False, reboot=False):
     hostname = host['hostname']
     try:
         cisco = ciscoios.CiscoIOS(host)
@@ -26,24 +28,28 @@ def load_ios(host, ios_image):
             return False
         return True
 
-    ret = ''
     if free_check() and not cisco.file_exist(file=ios_image):
-        ret += cisco.load_file(file=ios_image, dst_file='flash:{0}'.format(ios_image))
+        cisco.load_file(file=ios_image, dst_file='flash:{0}'.format(ios_image))
 
     for switch in cisco.get_switches():
         if switch['role'] == "Member":
             sw_num = switch['switch']
             if free_check('flash{0}:'.format(sw_num)) and \
                     not cisco.file_exist(file=ios_image, flash='flash{0}:'.format(sw_num)):
-                ret += cisco.f2f_copy(src='flash:{0}'.format(ios_image),
-                                      dst='flash{0}:{1}'.format(sw_num, ios_image))
+                ret = cisco.f2f_copy(src='flash:{0}'.format(ios_image),
+                                     dst='flash{0}:{1}'.format(sw_num, ios_image))
+    if setios:
+        ret += cisco.set_image(image=ios_image)
+    if reboot:
+        ret += cisco.reload(save=True)
+
     return ret
 
 
 if __name__ == '__main__':
     conf = parseconf.ParseConf()
     conf.set_pass(getpass.getpass())
-    swit = conf.get_host_by_name('acc-sw-5.2')
-    retv = load_ios(host=swit, ios_image='c2960s-universalk9-mz.150-2.SE11.bin')
-    if retv:
-        print(retv)
+    pool = Pool(4)
+    pool.map(partial(load_ios, ios_image='c2960s-universalk9-mz.150-2.SE11.bin', setios=True), conf.get_all_hosts())
+    pool.close()
+    pool.join()
